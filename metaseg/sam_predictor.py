@@ -95,19 +95,19 @@ class SegAutoMaskPredictor:
         cap, out = load_video(source, output_path)
         length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         colors = np.random.randint(0, 255, size=(256, 3), dtype=np.uint8)
+        model = self.load_model(model_type)
+        mask_generator = SamAutomaticMaskGenerator(
+            model,
+            points_per_side=points_per_side,
+            points_per_batch=points_per_batch,
+            min_mask_region_area=min_area,
+        )
 
         for _ in tqdm(range(length)):
             ret, frame = cap.read()
             if not ret:
                 break
-
-            model = self.load_model(model_type)
-            mask_generator = SamAutomaticMaskGenerator(
-                model,
-                points_per_side=points_per_side,
-                points_per_batch=points_per_batch,
-                min_mask_region_area=min_area,
-            )
+            
             masks = mask_generator.generate(frame)
 
             if len(masks) == 0:
@@ -224,14 +224,13 @@ class SegManualMaskPredictor:
     ):
         cap, out = load_video(source, output_path)
         length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
+        model = self.load_model(model_type)
+        predictor = SamPredictor(model)
         for _ in tqdm(range(length)):
             ret, frame = cap.read()
             if not ret:
                 break
 
-            model = self.load_model(model_type)
-            predictor = SamPredictor(model)
             predictor.set_image(frame)
 
             if type(input_box[0]) == list:
